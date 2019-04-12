@@ -1,0 +1,44 @@
+{
+    "name": "Appointment",
+    "fields": [
+        {
+            "fieldName": "apptTime",
+            "fieldType": "LocalDate",
+            "fieldValidateRules": [
+                "required"
+            ]
+        }
+    ],
+    "relationships": [
+        {
+            "relationshipType": "many-to-one",
+            "otherEntityName": "slot",
+            "otherEntityRelationshipName": "appointment",
+            "relationshipName": "slot",
+            "otherEntityField": "startTime"
+        },
+        {
+            "relationshipType": "many-to-one",
+            "otherEntityName": "vet",
+            "otherEntityRelationshipName": "appointment",
+            "relationshipName": "vet",
+            "otherEntityField": "name"
+        },
+        {
+            "relationshipType": "many-to-one",
+            "otherEntityName": "pet",
+            "otherEntityRelationshipName": "appointment",
+            "relationshipName": "pet",
+            "otherEntityField": "name"
+        }
+    ],
+    "changelogDate": "20190411182711",
+    "entityTableName": "appointment",
+    "dto": "no",
+    "pagination": "pagination",
+    "service": "serviceImpl",
+    "jpaMetamodelFiltering": false,
+    "fluentMethods": true,
+    "clientRootFolder": "",
+    "applications": "*"
+}
