@@ -4,6 +4,8 @@ import com.example.service.OwnerService;
 import com.example.web.rest.errors.BadRequestAlertException;
 import com.example.web.rest.util.HeaderUtil;
 import com.example.web.rest.util.PaginationUtil;
+import com.example.service.dto.OwnerCriteria;
+import com.example.service.OwnerQueryService;
 import io.github.jhipster.web.util.ResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,8 +38,11 @@ public class OwnerResource {
 
     private final OwnerService ownerService;
 
-    public OwnerResource(OwnerService ownerService) {
+    private final OwnerQueryService ownerQueryService;
+
+    public OwnerResource(OwnerService ownerService, OwnerQueryService ownerQueryService) {
         this.ownerService = ownerService;
+        this.ownerQueryService = ownerQueryService;
     }
 
     /**
@@ -84,14 +89,27 @@ public class OwnerResource {
      * GET  /owners : get all the owners.
      *
      * @param pageable the pagination information
+     * @param criteria the criterias which the requested entities should match
      * @return the ResponseEntity with status 200 (OK) and the list of owners in body
      */
     @GetMapping("/owners")
-    public ResponseEntity<List<Owner>> getAllOwners(Pageable pageable) {
-        log.debug("REST request to get a page of Owners");
-        Page<Owner> page = ownerService.findAll(pageable);
+    public ResponseEntity<List<Owner>> getAllOwners(OwnerCriteria criteria, Pageable pageable) {
+        log.debug("REST request to get Owners by criteria: {}", criteria);
+        Page<Owner> page = ownerQueryService.findByCriteria(criteria, pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(page, "/api/owners");
         return ResponseEntity.ok().headers(headers).body(page.getContent());
+    }
+
+    /**
+    * GET  /owners/count : count all the owners.
+    *
+    * @param criteria the criterias which the requested entities should match
+    * @return the ResponseEntity with status 200 (OK) and the count in body
+    */
+    @GetMapping("/owners/count")
+    public ResponseEntity<Long> countOwners(OwnerCriteria criteria) {
+        log.debug("REST request to count Owners by criteria: {}", criteria);
+        return ResponseEntity.ok().body(ownerQueryService.countByCriteria(criteria));
     }
 
     /**

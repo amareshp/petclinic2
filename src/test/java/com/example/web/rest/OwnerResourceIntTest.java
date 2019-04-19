@@ -7,6 +7,8 @@ import com.example.repository.OwnerRepository;
 import com.example.repository.search.OwnerSearchRepository;
 import com.example.service.OwnerService;
 import com.example.web.rest.errors.ExceptionTranslator;
+import com.example.service.dto.OwnerCriteria;
+import com.example.service.OwnerQueryService;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -71,6 +73,9 @@ public class OwnerResourceIntTest {
     private OwnerSearchRepository mockOwnerSearchRepository;
 
     @Autowired
+    private OwnerQueryService ownerQueryService;
+
+    @Autowired
     private MappingJackson2HttpMessageConverter jacksonMessageConverter;
 
     @Autowired
@@ -92,7 +97,7 @@ public class OwnerResourceIntTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        final OwnerResource ownerResource = new OwnerResource(ownerService);
+        final OwnerResource ownerResource = new OwnerResource(ownerService, ownerQueryService);
         this.restOwnerMockMvc = MockMvcBuilders.standaloneSetup(ownerResource)
             .setCustomArgumentResolvers(pageableArgumentResolver)
             .setControllerAdvice(exceptionTranslator)
@@ -196,6 +201,159 @@ public class OwnerResourceIntTest {
             .andExpect(jsonPath("$.email").value(DEFAULT_EMAIL.toString()))
             .andExpect(jsonPath("$.phone").value(DEFAULT_PHONE.toString()));
     }
+
+    @Test
+    @Transactional
+    public void getAllOwnersByNameIsEqualToSomething() throws Exception {
+        // Initialize the database
+        ownerRepository.saveAndFlush(owner);
+
+        // Get all the ownerList where name equals to DEFAULT_NAME
+        defaultOwnerShouldBeFound("name.equals=" + DEFAULT_NAME);
+
+        // Get all the ownerList where name equals to UPDATED_NAME
+        defaultOwnerShouldNotBeFound("name.equals=" + UPDATED_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllOwnersByNameIsInShouldWork() throws Exception {
+        // Initialize the database
+        ownerRepository.saveAndFlush(owner);
+
+        // Get all the ownerList where name in DEFAULT_NAME or UPDATED_NAME
+        defaultOwnerShouldBeFound("name.in=" + DEFAULT_NAME + "," + UPDATED_NAME);
+
+        // Get all the ownerList where name equals to UPDATED_NAME
+        defaultOwnerShouldNotBeFound("name.in=" + UPDATED_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllOwnersByNameIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        ownerRepository.saveAndFlush(owner);
+
+        // Get all the ownerList where name is not null
+        defaultOwnerShouldBeFound("name.specified=true");
+
+        // Get all the ownerList where name is null
+        defaultOwnerShouldNotBeFound("name.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllOwnersByEmailIsEqualToSomething() throws Exception {
+        // Initialize the database
+        ownerRepository.saveAndFlush(owner);
+
+        // Get all the ownerList where email equals to DEFAULT_EMAIL
+        defaultOwnerShouldBeFound("email.equals=" + DEFAULT_EMAIL);
+
+        // Get all the ownerList where email equals to UPDATED_EMAIL
+        defaultOwnerShouldNotBeFound("email.equals=" + UPDATED_EMAIL);
+    }
+
+    @Test
+    @Transactional
+    public void getAllOwnersByEmailIsInShouldWork() throws Exception {
+        // Initialize the database
+        ownerRepository.saveAndFlush(owner);
+
+        // Get all the ownerList where email in DEFAULT_EMAIL or UPDATED_EMAIL
+        defaultOwnerShouldBeFound("email.in=" + DEFAULT_EMAIL + "," + UPDATED_EMAIL);
+
+        // Get all the ownerList where email equals to UPDATED_EMAIL
+        defaultOwnerShouldNotBeFound("email.in=" + UPDATED_EMAIL);
+    }
+
+    @Test
+    @Transactional
+    public void getAllOwnersByEmailIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        ownerRepository.saveAndFlush(owner);
+
+        // Get all the ownerList where email is not null
+        defaultOwnerShouldBeFound("email.specified=true");
+
+        // Get all the ownerList where email is null
+        defaultOwnerShouldNotBeFound("email.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllOwnersByPhoneIsEqualToSomething() throws Exception {
+        // Initialize the database
+        ownerRepository.saveAndFlush(owner);
+
+        // Get all the ownerList where phone equals to DEFAULT_PHONE
+        defaultOwnerShouldBeFound("phone.equals=" + DEFAULT_PHONE);
+
+        // Get all the ownerList where phone equals to UPDATED_PHONE
+        defaultOwnerShouldNotBeFound("phone.equals=" + UPDATED_PHONE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllOwnersByPhoneIsInShouldWork() throws Exception {
+        // Initialize the database
+        ownerRepository.saveAndFlush(owner);
+
+        // Get all the ownerList where phone in DEFAULT_PHONE or UPDATED_PHONE
+        defaultOwnerShouldBeFound("phone.in=" + DEFAULT_PHONE + "," + UPDATED_PHONE);
+
+        // Get all the ownerList where phone equals to UPDATED_PHONE
+        defaultOwnerShouldNotBeFound("phone.in=" + UPDATED_PHONE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllOwnersByPhoneIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        ownerRepository.saveAndFlush(owner);
+
+        // Get all the ownerList where phone is not null
+        defaultOwnerShouldBeFound("phone.specified=true");
+
+        // Get all the ownerList where phone is null
+        defaultOwnerShouldNotBeFound("phone.specified=false");
+    }
+    /**
+     * Executes the search, and checks that the default entity is returned
+     */
+    private void defaultOwnerShouldBeFound(String filter) throws Exception {
+        restOwnerMockMvc.perform(get("/api/owners?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(jsonPath("$.[*].id").value(hasItem(owner.getId().intValue())))
+            .andExpect(jsonPath("$.[*].name").value(hasItem(DEFAULT_NAME)))
+            .andExpect(jsonPath("$.[*].email").value(hasItem(DEFAULT_EMAIL)))
+            .andExpect(jsonPath("$.[*].phone").value(hasItem(DEFAULT_PHONE)));
+
+        // Check, that the count call also returns 1
+        restOwnerMockMvc.perform(get("/api/owners/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(content().string("1"));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is not returned
+     */
+    private void defaultOwnerShouldNotBeFound(String filter) throws Exception {
+        restOwnerMockMvc.perform(get("/api/owners?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+
+        // Check, that the count call also returns 0
+        restOwnerMockMvc.perform(get("/api/owners/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(content().string("0"));
+    }
+
 
     @Test
     @Transactional

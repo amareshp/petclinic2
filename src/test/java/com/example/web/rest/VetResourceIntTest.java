@@ -7,6 +7,8 @@ import com.example.repository.VetRepository;
 import com.example.repository.search.VetSearchRepository;
 import com.example.service.VetService;
 import com.example.web.rest.errors.ExceptionTranslator;
+import com.example.service.dto.VetCriteria;
+import com.example.service.VetQueryService;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -77,6 +79,9 @@ public class VetResourceIntTest {
     private VetSearchRepository mockVetSearchRepository;
 
     @Autowired
+    private VetQueryService vetQueryService;
+
+    @Autowired
     private MappingJackson2HttpMessageConverter jacksonMessageConverter;
 
     @Autowired
@@ -98,7 +103,7 @@ public class VetResourceIntTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        final VetResource vetResource = new VetResource(vetService);
+        final VetResource vetResource = new VetResource(vetService, vetQueryService);
         this.restVetMockMvc = MockMvcBuilders.standaloneSetup(vetResource)
             .setCustomArgumentResolvers(pageableArgumentResolver)
             .setControllerAdvice(exceptionTranslator)
@@ -210,6 +215,239 @@ public class VetResourceIntTest {
             .andExpect(jsonPath("$.stateProvince").value(DEFAULT_STATE_PROVINCE.toString()))
             .andExpect(jsonPath("$.phone").value(DEFAULT_PHONE.toString()));
     }
+
+    @Test
+    @Transactional
+    public void getAllVetsByNameIsEqualToSomething() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where name equals to DEFAULT_NAME
+        defaultVetShouldBeFound("name.equals=" + DEFAULT_NAME);
+
+        // Get all the vetList where name equals to UPDATED_NAME
+        defaultVetShouldNotBeFound("name.equals=" + UPDATED_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllVetsByNameIsInShouldWork() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where name in DEFAULT_NAME or UPDATED_NAME
+        defaultVetShouldBeFound("name.in=" + DEFAULT_NAME + "," + UPDATED_NAME);
+
+        // Get all the vetList where name equals to UPDATED_NAME
+        defaultVetShouldNotBeFound("name.in=" + UPDATED_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllVetsByNameIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where name is not null
+        defaultVetShouldBeFound("name.specified=true");
+
+        // Get all the vetList where name is null
+        defaultVetShouldNotBeFound("name.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllVetsByAddressIsEqualToSomething() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where address equals to DEFAULT_ADDRESS
+        defaultVetShouldBeFound("address.equals=" + DEFAULT_ADDRESS);
+
+        // Get all the vetList where address equals to UPDATED_ADDRESS
+        defaultVetShouldNotBeFound("address.equals=" + UPDATED_ADDRESS);
+    }
+
+    @Test
+    @Transactional
+    public void getAllVetsByAddressIsInShouldWork() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where address in DEFAULT_ADDRESS or UPDATED_ADDRESS
+        defaultVetShouldBeFound("address.in=" + DEFAULT_ADDRESS + "," + UPDATED_ADDRESS);
+
+        // Get all the vetList where address equals to UPDATED_ADDRESS
+        defaultVetShouldNotBeFound("address.in=" + UPDATED_ADDRESS);
+    }
+
+    @Test
+    @Transactional
+    public void getAllVetsByAddressIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where address is not null
+        defaultVetShouldBeFound("address.specified=true");
+
+        // Get all the vetList where address is null
+        defaultVetShouldNotBeFound("address.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllVetsByCityIsEqualToSomething() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where city equals to DEFAULT_CITY
+        defaultVetShouldBeFound("city.equals=" + DEFAULT_CITY);
+
+        // Get all the vetList where city equals to UPDATED_CITY
+        defaultVetShouldNotBeFound("city.equals=" + UPDATED_CITY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllVetsByCityIsInShouldWork() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where city in DEFAULT_CITY or UPDATED_CITY
+        defaultVetShouldBeFound("city.in=" + DEFAULT_CITY + "," + UPDATED_CITY);
+
+        // Get all the vetList where city equals to UPDATED_CITY
+        defaultVetShouldNotBeFound("city.in=" + UPDATED_CITY);
+    }
+
+    @Test
+    @Transactional
+    public void getAllVetsByCityIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where city is not null
+        defaultVetShouldBeFound("city.specified=true");
+
+        // Get all the vetList where city is null
+        defaultVetShouldNotBeFound("city.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllVetsByStateProvinceIsEqualToSomething() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where stateProvince equals to DEFAULT_STATE_PROVINCE
+        defaultVetShouldBeFound("stateProvince.equals=" + DEFAULT_STATE_PROVINCE);
+
+        // Get all the vetList where stateProvince equals to UPDATED_STATE_PROVINCE
+        defaultVetShouldNotBeFound("stateProvince.equals=" + UPDATED_STATE_PROVINCE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllVetsByStateProvinceIsInShouldWork() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where stateProvince in DEFAULT_STATE_PROVINCE or UPDATED_STATE_PROVINCE
+        defaultVetShouldBeFound("stateProvince.in=" + DEFAULT_STATE_PROVINCE + "," + UPDATED_STATE_PROVINCE);
+
+        // Get all the vetList where stateProvince equals to UPDATED_STATE_PROVINCE
+        defaultVetShouldNotBeFound("stateProvince.in=" + UPDATED_STATE_PROVINCE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllVetsByStateProvinceIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where stateProvince is not null
+        defaultVetShouldBeFound("stateProvince.specified=true");
+
+        // Get all the vetList where stateProvince is null
+        defaultVetShouldNotBeFound("stateProvince.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllVetsByPhoneIsEqualToSomething() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where phone equals to DEFAULT_PHONE
+        defaultVetShouldBeFound("phone.equals=" + DEFAULT_PHONE);
+
+        // Get all the vetList where phone equals to UPDATED_PHONE
+        defaultVetShouldNotBeFound("phone.equals=" + UPDATED_PHONE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllVetsByPhoneIsInShouldWork() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where phone in DEFAULT_PHONE or UPDATED_PHONE
+        defaultVetShouldBeFound("phone.in=" + DEFAULT_PHONE + "," + UPDATED_PHONE);
+
+        // Get all the vetList where phone equals to UPDATED_PHONE
+        defaultVetShouldNotBeFound("phone.in=" + UPDATED_PHONE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllVetsByPhoneIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        vetRepository.saveAndFlush(vet);
+
+        // Get all the vetList where phone is not null
+        defaultVetShouldBeFound("phone.specified=true");
+
+        // Get all the vetList where phone is null
+        defaultVetShouldNotBeFound("phone.specified=false");
+    }
+    /**
+     * Executes the search, and checks that the default entity is returned
+     */
+    private void defaultVetShouldBeFound(String filter) throws Exception {
+        restVetMockMvc.perform(get("/api/vets?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(jsonPath("$.[*].id").value(hasItem(vet.getId().intValue())))
+            .andExpect(jsonPath("$.[*].name").value(hasItem(DEFAULT_NAME)))
+            .andExpect(jsonPath("$.[*].address").value(hasItem(DEFAULT_ADDRESS)))
+            .andExpect(jsonPath("$.[*].city").value(hasItem(DEFAULT_CITY)))
+            .andExpect(jsonPath("$.[*].stateProvince").value(hasItem(DEFAULT_STATE_PROVINCE)))
+            .andExpect(jsonPath("$.[*].phone").value(hasItem(DEFAULT_PHONE)));
+
+        // Check, that the count call also returns 1
+        restVetMockMvc.perform(get("/api/vets/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(content().string("1"));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is not returned
+     */
+    private void defaultVetShouldNotBeFound(String filter) throws Exception {
+        restVetMockMvc.perform(get("/api/vets?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+
+        // Check, that the count call also returns 0
+        restVetMockMvc.perform(get("/api/vets/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(content().string("0"));
+    }
+
 
     @Test
     @Transactional

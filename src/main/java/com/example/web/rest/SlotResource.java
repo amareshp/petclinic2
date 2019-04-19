@@ -3,6 +3,8 @@ import com.example.domain.Slot;
 import com.example.service.SlotService;
 import com.example.web.rest.errors.BadRequestAlertException;
 import com.example.web.rest.util.HeaderUtil;
+import com.example.service.dto.SlotCriteria;
+import com.example.service.SlotQueryService;
 import io.github.jhipster.web.util.ResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,8 +34,11 @@ public class SlotResource {
 
     private final SlotService slotService;
 
-    public SlotResource(SlotService slotService) {
+    private final SlotQueryService slotQueryService;
+
+    public SlotResource(SlotService slotService, SlotQueryService slotQueryService) {
         this.slotService = slotService;
+        this.slotQueryService = slotQueryService;
     }
 
     /**
@@ -79,12 +84,26 @@ public class SlotResource {
     /**
      * GET  /slots : get all the slots.
      *
+     * @param criteria the criterias which the requested entities should match
      * @return the ResponseEntity with status 200 (OK) and the list of slots in body
      */
     @GetMapping("/slots")
-    public List<Slot> getAllSlots() {
-        log.debug("REST request to get all Slots");
-        return slotService.findAll();
+    public ResponseEntity<List<Slot>> getAllSlots(SlotCriteria criteria) {
+        log.debug("REST request to get Slots by criteria: {}", criteria);
+        List<Slot> entityList = slotQueryService.findByCriteria(criteria);
+        return ResponseEntity.ok().body(entityList);
+    }
+
+    /**
+    * GET  /slots/count : count all the slots.
+    *
+    * @param criteria the criterias which the requested entities should match
+    * @return the ResponseEntity with status 200 (OK) and the count in body
+    */
+    @GetMapping("/slots/count")
+    public ResponseEntity<Long> countSlots(SlotCriteria criteria) {
+        log.debug("REST request to count Slots by criteria: {}", criteria);
+        return ResponseEntity.ok().body(slotQueryService.countByCriteria(criteria));
     }
 
     /**

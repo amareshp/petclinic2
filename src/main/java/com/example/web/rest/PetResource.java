@@ -4,6 +4,8 @@ import com.example.service.PetService;
 import com.example.web.rest.errors.BadRequestAlertException;
 import com.example.web.rest.util.HeaderUtil;
 import com.example.web.rest.util.PaginationUtil;
+import com.example.service.dto.PetCriteria;
+import com.example.service.PetQueryService;
 import io.github.jhipster.web.util.ResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,8 +38,11 @@ public class PetResource {
 
     private final PetService petService;
 
-    public PetResource(PetService petService) {
+    private final PetQueryService petQueryService;
+
+    public PetResource(PetService petService, PetQueryService petQueryService) {
         this.petService = petService;
+        this.petQueryService = petQueryService;
     }
 
     /**
@@ -84,14 +89,27 @@ public class PetResource {
      * GET  /pets : get all the pets.
      *
      * @param pageable the pagination information
+     * @param criteria the criterias which the requested entities should match
      * @return the ResponseEntity with status 200 (OK) and the list of pets in body
      */
     @GetMapping("/pets")
-    public ResponseEntity<List<Pet>> getAllPets(Pageable pageable) {
-        log.debug("REST request to get a page of Pets");
-        Page<Pet> page = petService.findAll(pageable);
+    public ResponseEntity<List<Pet>> getAllPets(PetCriteria criteria, Pageable pageable) {
+        log.debug("REST request to get Pets by criteria: {}", criteria);
+        Page<Pet> page = petQueryService.findByCriteria(criteria, pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(page, "/api/pets");
         return ResponseEntity.ok().headers(headers).body(page.getContent());
+    }
+
+    /**
+    * GET  /pets/count : count all the pets.
+    *
+    * @param criteria the criterias which the requested entities should match
+    * @return the ResponseEntity with status 200 (OK) and the count in body
+    */
+    @GetMapping("/pets/count")
+    public ResponseEntity<Long> countPets(PetCriteria criteria) {
+        log.debug("REST request to count Pets by criteria: {}", criteria);
+        return ResponseEntity.ok().body(petQueryService.countByCriteria(criteria));
     }
 
     /**

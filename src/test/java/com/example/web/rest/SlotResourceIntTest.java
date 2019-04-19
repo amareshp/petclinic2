@@ -7,6 +7,8 @@ import com.example.repository.SlotRepository;
 import com.example.repository.search.SlotSearchRepository;
 import com.example.service.SlotService;
 import com.example.web.rest.errors.ExceptionTranslator;
+import com.example.service.dto.SlotCriteria;
+import com.example.service.SlotQueryService;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -63,6 +65,9 @@ public class SlotResourceIntTest {
     private SlotSearchRepository mockSlotSearchRepository;
 
     @Autowired
+    private SlotQueryService slotQueryService;
+
+    @Autowired
     private MappingJackson2HttpMessageConverter jacksonMessageConverter;
 
     @Autowired
@@ -84,7 +89,7 @@ public class SlotResourceIntTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        final SlotResource slotResource = new SlotResource(slotService);
+        final SlotResource slotResource = new SlotResource(slotService, slotQueryService);
         this.restSlotMockMvc = MockMvcBuilders.standaloneSetup(slotResource)
             .setCustomArgumentResolvers(pageableArgumentResolver)
             .setControllerAdvice(exceptionTranslator)
@@ -198,6 +203,79 @@ public class SlotResourceIntTest {
             .andExpect(jsonPath("$.id").value(slot.getId().intValue()))
             .andExpect(jsonPath("$.startTime").value(DEFAULT_START_TIME.toString()));
     }
+
+    @Test
+    @Transactional
+    public void getAllSlotsByStartTimeIsEqualToSomething() throws Exception {
+        // Initialize the database
+        slotRepository.saveAndFlush(slot);
+
+        // Get all the slotList where startTime equals to DEFAULT_START_TIME
+        defaultSlotShouldBeFound("startTime.equals=" + DEFAULT_START_TIME);
+
+        // Get all the slotList where startTime equals to UPDATED_START_TIME
+        defaultSlotShouldNotBeFound("startTime.equals=" + UPDATED_START_TIME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllSlotsByStartTimeIsInShouldWork() throws Exception {
+        // Initialize the database
+        slotRepository.saveAndFlush(slot);
+
+        // Get all the slotList where startTime in DEFAULT_START_TIME or UPDATED_START_TIME
+        defaultSlotShouldBeFound("startTime.in=" + DEFAULT_START_TIME + "," + UPDATED_START_TIME);
+
+        // Get all the slotList where startTime equals to UPDATED_START_TIME
+        defaultSlotShouldNotBeFound("startTime.in=" + UPDATED_START_TIME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllSlotsByStartTimeIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        slotRepository.saveAndFlush(slot);
+
+        // Get all the slotList where startTime is not null
+        defaultSlotShouldBeFound("startTime.specified=true");
+
+        // Get all the slotList where startTime is null
+        defaultSlotShouldNotBeFound("startTime.specified=false");
+    }
+    /**
+     * Executes the search, and checks that the default entity is returned
+     */
+    private void defaultSlotShouldBeFound(String filter) throws Exception {
+        restSlotMockMvc.perform(get("/api/slots?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(jsonPath("$.[*].id").value(hasItem(slot.getId().intValue())))
+            .andExpect(jsonPath("$.[*].startTime").value(hasItem(DEFAULT_START_TIME)));
+
+        // Check, that the count call also returns 1
+        restSlotMockMvc.perform(get("/api/slots/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(content().string("1"));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is not returned
+     */
+    private void defaultSlotShouldNotBeFound(String filter) throws Exception {
+        restSlotMockMvc.perform(get("/api/slots?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+
+        // Check, that the count call also returns 0
+        restSlotMockMvc.perform(get("/api/slots/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(content().string("0"));
+    }
+
 
     @Test
     @Transactional

@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -98,5 +99,14 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Transactional(readOnly = true)
     public Page<Appointment> search(String query, Pageable pageable) {
         log.debug("Request to search for a page of Appointments for query {}", query);
-        return appointmentSearchRepository.search(queryStringQuery(query), pageable);    }
+        Pageable firstPageWithTenElements = PageRequest.of(0, 10);
+        if(query.startsWith("vet:")) {
+            String vetName = query.replace("vet:", "").trim();
+            return appointmentRepository.findByVetName(vetName, firstPageWithTenElements);
+        } else if(query.startsWith("pet:")) {
+            String petName = query.replace("pet:", "").trim();
+            return appointmentRepository.findByPetName(petName, firstPageWithTenElements);
+        }
+        return appointmentSearchRepository.search(queryStringQuery(query), pageable);
+    }
 }

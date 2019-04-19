@@ -4,6 +4,8 @@ import com.example.service.AppointmentService;
 import com.example.web.rest.errors.BadRequestAlertException;
 import com.example.web.rest.util.HeaderUtil;
 import com.example.web.rest.util.PaginationUtil;
+import com.example.service.dto.AppointmentCriteria;
+import com.example.service.AppointmentQueryService;
 import io.github.jhipster.web.util.ResponseUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,8 +39,11 @@ public class AppointmentResource {
 
     private final AppointmentService appointmentService;
 
-    public AppointmentResource(AppointmentService appointmentService) {
+    private final AppointmentQueryService appointmentQueryService;
+
+    public AppointmentResource(AppointmentService appointmentService, AppointmentQueryService appointmentQueryService) {
         this.appointmentService = appointmentService;
+        this.appointmentQueryService = appointmentQueryService;
     }
 
     /**
@@ -85,14 +90,27 @@ public class AppointmentResource {
      * GET  /appointments : get all the appointments.
      *
      * @param pageable the pagination information
+     * @param criteria the criterias which the requested entities should match
      * @return the ResponseEntity with status 200 (OK) and the list of appointments in body
      */
     @GetMapping("/appointments")
-    public ResponseEntity<List<Appointment>> getAllAppointments(Pageable pageable) {
-        log.debug("REST request to get a page of Appointments");
-        Page<Appointment> page = appointmentService.findAll(pageable);
+    public ResponseEntity<List<Appointment>> getAllAppointments(AppointmentCriteria criteria, Pageable pageable) {
+        log.debug("REST request to get Appointments by criteria: {}", criteria);
+        Page<Appointment> page = appointmentQueryService.findByCriteria(criteria, pageable);
         HttpHeaders headers = PaginationUtil.generatePaginationHttpHeaders(page, "/api/appointments");
         return ResponseEntity.ok().headers(headers).body(page.getContent());
+    }
+
+    /**
+    * GET  /appointments/count : count all the appointments.
+    *
+    * @param criteria the criterias which the requested entities should match
+    * @return the ResponseEntity with status 200 (OK) and the count in body
+    */
+    @GetMapping("/appointments/count")
+    public ResponseEntity<Long> countAppointments(AppointmentCriteria criteria) {
+        log.debug("REST request to count Appointments by criteria: {}", criteria);
+        return ResponseEntity.ok().body(appointmentQueryService.countByCriteria(criteria));
     }
 
     /**

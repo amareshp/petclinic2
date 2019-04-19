@@ -3,10 +3,13 @@ package com.example.web.rest;
 import com.example.Petclinic2App;
 
 import com.example.domain.Pet;
+import com.example.domain.Owner;
 import com.example.repository.PetRepository;
 import com.example.repository.search.PetSearchRepository;
 import com.example.service.PetService;
 import com.example.web.rest.errors.ExceptionTranslator;
+import com.example.service.dto.PetCriteria;
+import com.example.service.PetQueryService;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -71,6 +74,9 @@ public class PetResourceIntTest {
     private PetSearchRepository mockPetSearchRepository;
 
     @Autowired
+    private PetQueryService petQueryService;
+
+    @Autowired
     private MappingJackson2HttpMessageConverter jacksonMessageConverter;
 
     @Autowired
@@ -92,7 +98,7 @@ public class PetResourceIntTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        final PetResource petResource = new PetResource(petService);
+        final PetResource petResource = new PetResource(petService, petQueryService);
         this.restPetMockMvc = MockMvcBuilders.standaloneSetup(petResource)
             .setCustomArgumentResolvers(pageableArgumentResolver)
             .setControllerAdvice(exceptionTranslator)
@@ -196,6 +202,178 @@ public class PetResourceIntTest {
             .andExpect(jsonPath("$.type").value(DEFAULT_TYPE.toString()))
             .andExpect(jsonPath("$.breed").value(DEFAULT_BREED.toString()));
     }
+
+    @Test
+    @Transactional
+    public void getAllPetsByNameIsEqualToSomething() throws Exception {
+        // Initialize the database
+        petRepository.saveAndFlush(pet);
+
+        // Get all the petList where name equals to DEFAULT_NAME
+        defaultPetShouldBeFound("name.equals=" + DEFAULT_NAME);
+
+        // Get all the petList where name equals to UPDATED_NAME
+        defaultPetShouldNotBeFound("name.equals=" + UPDATED_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllPetsByNameIsInShouldWork() throws Exception {
+        // Initialize the database
+        petRepository.saveAndFlush(pet);
+
+        // Get all the petList where name in DEFAULT_NAME or UPDATED_NAME
+        defaultPetShouldBeFound("name.in=" + DEFAULT_NAME + "," + UPDATED_NAME);
+
+        // Get all the petList where name equals to UPDATED_NAME
+        defaultPetShouldNotBeFound("name.in=" + UPDATED_NAME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllPetsByNameIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        petRepository.saveAndFlush(pet);
+
+        // Get all the petList where name is not null
+        defaultPetShouldBeFound("name.specified=true");
+
+        // Get all the petList where name is null
+        defaultPetShouldNotBeFound("name.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllPetsByTypeIsEqualToSomething() throws Exception {
+        // Initialize the database
+        petRepository.saveAndFlush(pet);
+
+        // Get all the petList where type equals to DEFAULT_TYPE
+        defaultPetShouldBeFound("type.equals=" + DEFAULT_TYPE);
+
+        // Get all the petList where type equals to UPDATED_TYPE
+        defaultPetShouldNotBeFound("type.equals=" + UPDATED_TYPE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllPetsByTypeIsInShouldWork() throws Exception {
+        // Initialize the database
+        petRepository.saveAndFlush(pet);
+
+        // Get all the petList where type in DEFAULT_TYPE or UPDATED_TYPE
+        defaultPetShouldBeFound("type.in=" + DEFAULT_TYPE + "," + UPDATED_TYPE);
+
+        // Get all the petList where type equals to UPDATED_TYPE
+        defaultPetShouldNotBeFound("type.in=" + UPDATED_TYPE);
+    }
+
+    @Test
+    @Transactional
+    public void getAllPetsByTypeIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        petRepository.saveAndFlush(pet);
+
+        // Get all the petList where type is not null
+        defaultPetShouldBeFound("type.specified=true");
+
+        // Get all the petList where type is null
+        defaultPetShouldNotBeFound("type.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllPetsByBreedIsEqualToSomething() throws Exception {
+        // Initialize the database
+        petRepository.saveAndFlush(pet);
+
+        // Get all the petList where breed equals to DEFAULT_BREED
+        defaultPetShouldBeFound("breed.equals=" + DEFAULT_BREED);
+
+        // Get all the petList where breed equals to UPDATED_BREED
+        defaultPetShouldNotBeFound("breed.equals=" + UPDATED_BREED);
+    }
+
+    @Test
+    @Transactional
+    public void getAllPetsByBreedIsInShouldWork() throws Exception {
+        // Initialize the database
+        petRepository.saveAndFlush(pet);
+
+        // Get all the petList where breed in DEFAULT_BREED or UPDATED_BREED
+        defaultPetShouldBeFound("breed.in=" + DEFAULT_BREED + "," + UPDATED_BREED);
+
+        // Get all the petList where breed equals to UPDATED_BREED
+        defaultPetShouldNotBeFound("breed.in=" + UPDATED_BREED);
+    }
+
+    @Test
+    @Transactional
+    public void getAllPetsByBreedIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        petRepository.saveAndFlush(pet);
+
+        // Get all the petList where breed is not null
+        defaultPetShouldBeFound("breed.specified=true");
+
+        // Get all the petList where breed is null
+        defaultPetShouldNotBeFound("breed.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllPetsByOwnerIsEqualToSomething() throws Exception {
+        // Initialize the database
+        Owner owner = OwnerResourceIntTest.createEntity(em);
+        em.persist(owner);
+        em.flush();
+        pet.setOwner(owner);
+        petRepository.saveAndFlush(pet);
+        Long ownerId = owner.getId();
+
+        // Get all the petList where owner equals to ownerId
+        defaultPetShouldBeFound("ownerId.equals=" + ownerId);
+
+        // Get all the petList where owner equals to ownerId + 1
+        defaultPetShouldNotBeFound("ownerId.equals=" + (ownerId + 1));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is returned
+     */
+    private void defaultPetShouldBeFound(String filter) throws Exception {
+        restPetMockMvc.perform(get("/api/pets?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(jsonPath("$.[*].id").value(hasItem(pet.getId().intValue())))
+            .andExpect(jsonPath("$.[*].name").value(hasItem(DEFAULT_NAME)))
+            .andExpect(jsonPath("$.[*].type").value(hasItem(DEFAULT_TYPE)))
+            .andExpect(jsonPath("$.[*].breed").value(hasItem(DEFAULT_BREED)));
+
+        // Check, that the count call also returns 1
+        restPetMockMvc.perform(get("/api/pets/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(content().string("1"));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is not returned
+     */
+    private void defaultPetShouldNotBeFound(String filter) throws Exception {
+        restPetMockMvc.perform(get("/api/pets?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+
+        // Check, that the count call also returns 0
+        restPetMockMvc.perform(get("/api/pets/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(content().string("0"));
+    }
+
 
     @Test
     @Transactional

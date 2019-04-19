@@ -3,10 +3,15 @@ package com.example.web.rest;
 import com.example.Petclinic2App;
 
 import com.example.domain.Appointment;
+import com.example.domain.Slot;
+import com.example.domain.Vet;
+import com.example.domain.Pet;
 import com.example.repository.AppointmentRepository;
 import com.example.repository.search.AppointmentSearchRepository;
 import com.example.service.AppointmentService;
 import com.example.web.rest.errors.ExceptionTranslator;
+import com.example.service.dto.AppointmentCriteria;
+import com.example.service.AppointmentQueryService;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -67,6 +72,9 @@ public class AppointmentResourceIntTest {
     private AppointmentSearchRepository mockAppointmentSearchRepository;
 
     @Autowired
+    private AppointmentQueryService appointmentQueryService;
+
+    @Autowired
     private MappingJackson2HttpMessageConverter jacksonMessageConverter;
 
     @Autowired
@@ -88,7 +96,7 @@ public class AppointmentResourceIntTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        final AppointmentResource appointmentResource = new AppointmentResource(appointmentService);
+        final AppointmentResource appointmentResource = new AppointmentResource(appointmentService, appointmentQueryService);
         this.restAppointmentMockMvc = MockMvcBuilders.standaloneSetup(appointmentResource)
             .setCustomArgumentResolvers(pageableArgumentResolver)
             .setControllerAdvice(exceptionTranslator)
@@ -202,6 +210,163 @@ public class AppointmentResourceIntTest {
             .andExpect(jsonPath("$.id").value(appointment.getId().intValue()))
             .andExpect(jsonPath("$.apptTime").value(DEFAULT_APPT_TIME.toString()));
     }
+
+    @Test
+    @Transactional
+    public void getAllAppointmentsByApptTimeIsEqualToSomething() throws Exception {
+        // Initialize the database
+        appointmentRepository.saveAndFlush(appointment);
+
+        // Get all the appointmentList where apptTime equals to DEFAULT_APPT_TIME
+        defaultAppointmentShouldBeFound("apptTime.equals=" + DEFAULT_APPT_TIME);
+
+        // Get all the appointmentList where apptTime equals to UPDATED_APPT_TIME
+        defaultAppointmentShouldNotBeFound("apptTime.equals=" + UPDATED_APPT_TIME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllAppointmentsByApptTimeIsInShouldWork() throws Exception {
+        // Initialize the database
+        appointmentRepository.saveAndFlush(appointment);
+
+        // Get all the appointmentList where apptTime in DEFAULT_APPT_TIME or UPDATED_APPT_TIME
+        defaultAppointmentShouldBeFound("apptTime.in=" + DEFAULT_APPT_TIME + "," + UPDATED_APPT_TIME);
+
+        // Get all the appointmentList where apptTime equals to UPDATED_APPT_TIME
+        defaultAppointmentShouldNotBeFound("apptTime.in=" + UPDATED_APPT_TIME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllAppointmentsByApptTimeIsNullOrNotNull() throws Exception {
+        // Initialize the database
+        appointmentRepository.saveAndFlush(appointment);
+
+        // Get all the appointmentList where apptTime is not null
+        defaultAppointmentShouldBeFound("apptTime.specified=true");
+
+        // Get all the appointmentList where apptTime is null
+        defaultAppointmentShouldNotBeFound("apptTime.specified=false");
+    }
+
+    @Test
+    @Transactional
+    public void getAllAppointmentsByApptTimeIsGreaterThanOrEqualToSomething() throws Exception {
+        // Initialize the database
+        appointmentRepository.saveAndFlush(appointment);
+
+        // Get all the appointmentList where apptTime greater than or equals to DEFAULT_APPT_TIME
+        defaultAppointmentShouldBeFound("apptTime.greaterOrEqualThan=" + DEFAULT_APPT_TIME);
+
+        // Get all the appointmentList where apptTime greater than or equals to UPDATED_APPT_TIME
+        defaultAppointmentShouldNotBeFound("apptTime.greaterOrEqualThan=" + UPDATED_APPT_TIME);
+    }
+
+    @Test
+    @Transactional
+    public void getAllAppointmentsByApptTimeIsLessThanSomething() throws Exception {
+        // Initialize the database
+        appointmentRepository.saveAndFlush(appointment);
+
+        // Get all the appointmentList where apptTime less than or equals to DEFAULT_APPT_TIME
+        defaultAppointmentShouldNotBeFound("apptTime.lessThan=" + DEFAULT_APPT_TIME);
+
+        // Get all the appointmentList where apptTime less than or equals to UPDATED_APPT_TIME
+        defaultAppointmentShouldBeFound("apptTime.lessThan=" + UPDATED_APPT_TIME);
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllAppointmentsBySlotIsEqualToSomething() throws Exception {
+        // Initialize the database
+        Slot slot = SlotResourceIntTest.createEntity(em);
+        em.persist(slot);
+        em.flush();
+        appointment.setSlot(slot);
+        appointmentRepository.saveAndFlush(appointment);
+        Long slotId = slot.getId();
+
+        // Get all the appointmentList where slot equals to slotId
+        defaultAppointmentShouldBeFound("slotId.equals=" + slotId);
+
+        // Get all the appointmentList where slot equals to slotId + 1
+        defaultAppointmentShouldNotBeFound("slotId.equals=" + (slotId + 1));
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllAppointmentsByVetIsEqualToSomething() throws Exception {
+        // Initialize the database
+        Vet vet = VetResourceIntTest.createEntity(em);
+        em.persist(vet);
+        em.flush();
+        appointment.setVet(vet);
+        appointmentRepository.saveAndFlush(appointment);
+        Long vetId = vet.getId();
+
+        // Get all the appointmentList where vet equals to vetId
+        defaultAppointmentShouldBeFound("vetId.equals=" + vetId);
+
+        // Get all the appointmentList where vet equals to vetId + 1
+        defaultAppointmentShouldNotBeFound("vetId.equals=" + (vetId + 1));
+    }
+
+
+    @Test
+    @Transactional
+    public void getAllAppointmentsByPetIsEqualToSomething() throws Exception {
+        // Initialize the database
+        Pet pet = PetResourceIntTest.createEntity(em);
+        em.persist(pet);
+        em.flush();
+        appointment.setPet(pet);
+        appointmentRepository.saveAndFlush(appointment);
+        Long petId = pet.getId();
+
+        // Get all the appointmentList where pet equals to petId
+        defaultAppointmentShouldBeFound("petId.equals=" + petId);
+
+        // Get all the appointmentList where pet equals to petId + 1
+        defaultAppointmentShouldNotBeFound("petId.equals=" + (petId + 1));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is returned
+     */
+    private void defaultAppointmentShouldBeFound(String filter) throws Exception {
+        restAppointmentMockMvc.perform(get("/api/appointments?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(jsonPath("$.[*].id").value(hasItem(appointment.getId().intValue())))
+            .andExpect(jsonPath("$.[*].apptTime").value(hasItem(DEFAULT_APPT_TIME.toString())));
+
+        // Check, that the count call also returns 1
+        restAppointmentMockMvc.perform(get("/api/appointments/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(content().string("1"));
+    }
+
+    /**
+     * Executes the search, and checks that the default entity is not returned
+     */
+    private void defaultAppointmentShouldNotBeFound(String filter) throws Exception {
+        restAppointmentMockMvc.perform(get("/api/appointments?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$").isEmpty());
+
+        // Check, that the count call also returns 0
+        restAppointmentMockMvc.perform(get("/api/appointments/count?sort=id,desc&" + filter))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8_VALUE))
+            .andExpect(content().string("0"));
+    }
+
 
     @Test
     @Transactional
